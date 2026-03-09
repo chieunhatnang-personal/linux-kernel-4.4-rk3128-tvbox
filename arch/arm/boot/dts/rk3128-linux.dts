@@ -16,10 +16,6 @@
 	model = "Rockchip RK3128 Linux board";
 	compatible = "rockchip,rk3128";
 
-	chosen {
-		bootargs = "root=PARTUUID=614e0000-0000-4b53-8000-1d28000054a9 rootwait";
-	};
-
 	adc-keys {
 		compatible = "adc-keys";
 		io-channels = <&saradc 2>;
@@ -53,6 +49,7 @@
 
 	backlight: backlight {
 		compatible = "pwm-backlight";
+		status = "disabled";
 		pwms = <&pwm0 0 25000 0>;
 		brightness-levels = <0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
 			17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34
@@ -77,6 +74,7 @@
 
 	panel {
 		compatible = "simple-panel";
+		status = "disabled";
 		backlight = <&backlight>;
 		power-supply = <&ldo6>;
 		power-invert;
@@ -202,6 +200,30 @@
 
 &cpu0 {
 	cpu-supply = <&vdd_arm>;
+	clock-frequency = <1200000000>;
+};
+
+&cpu1 {
+	clock-frequency = <1200000000>;
+};
+
+&cpu2 {
+	clock-frequency = <1200000000>;
+};
+
+&cpu3 {
+	clock-frequency = <1200000000>;
+};
+
+/*
+ * Avoid fixed CMA address from rk312x-android.dtsi which can overlap initrd
+ * (seen as bad_page during free_initrd). Let kernel place CMA dynamically.
+ */
+&cma_region {
+	/delete-property/ reg;
+	size = <0x02000000>;
+	alignment = <0x2000>;
+	linux,cma-default;
 };
 
 &cif_new {
@@ -225,7 +247,7 @@
 };
 
 &display_subsystem {
-	status = "okay";
+	status = "disabled";
 };
 
 &dmc {
@@ -306,7 +328,7 @@
 		screen_max_x = <800>;
 		screen_max_y = <480>;
 		revert_x = <1>;
-		status = "okay";
+		status = "disabled";
 	};
 	sensor7660@1d {
 		compatible = "gs_sc7660";
@@ -603,7 +625,7 @@
 	ignore-pm-notify;
 	keep-power-in-suspend;
 	cd-gpios = <&gpio2 7 GPIO_ACTIVE_LOW>; /* CD GPIO */
-	status = "okay";
+	status = "disabled";
 };
 
 &sdio {
@@ -645,11 +667,11 @@
 };
 
 &vop {
-	status = "okay";
+	status = "disabled";
 };
 
 &vop_mmu {
-	status = "okay";
+	status = "disabled";
 };
 
 &vpu {
