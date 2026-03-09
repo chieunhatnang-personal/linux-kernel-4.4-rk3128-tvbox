@@ -188,7 +188,18 @@
 };
 
 &display_subsystem {
-	status = "disabled";
+	status = "okay";
+
+	route {
+		route_hdmi: route-hdmi {
+			status = "okay";
+			logo,uboot = "logo.bmp";
+			logo,kernel = "logo_kernel.bmp";
+			logo,mode = "center";
+			charge_logo,mode = "center";
+			connect = <&vop_out_hdmi>;
+		};
+	};
 };
 
 &dmc {
@@ -223,6 +234,11 @@
 &gpu {
 	status = "okay";
 	mali-supply = <&vdd_log>;
+};
+
+&hdmi {
+	#sound-dai-cells = <0>;
+	status = "okay";
 };
 
 &hevc {
@@ -595,11 +611,12 @@
 };
 
 &vop {
-	status = "disabled";
+	rockchip,grf = <&grf>;
+	status = "okay";
 };
 
 &vop_mmu {
-	status = "disabled";
+	status = "okay";
 };
 
 &vpu {
