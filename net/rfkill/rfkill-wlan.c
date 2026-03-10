@@ -38,6 +38,7 @@
 #include <linux/regmap.h>
 #include <linux/mfd/syscon.h>
 #include <linux/mmc/host.h>
+#include <linux/workqueue.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_device.h>
@@ -59,10 +60,15 @@ extern void mmc_pwrseq_power_off(struct mmc_host *host);
 struct rfkill_wlan_data {
 	struct rksdmmc_gpio_wifi_moudle *pdata;
     struct wake_lock            wlan_irq_wl;
+	struct delayed_work         sdio_detect_work;
+	int                         sdio_detect_retries;
 };
 
 static struct rfkill_wlan_data *g_rfkill = NULL;
 static int power_set_time = 0;
+
+#define WLAN_SDIO_DETECT_RETRY_MS 500
+#define WLAN_SDIO_DETECT_MAX_RETRIES 20
 
 static const char wlan_name[] = 
 #if defined (CONFIG_BCM4330)
@@ -465,6 +471,29 @@ int rockchip_wifi_reset(int on)
 }
 EXPORT_SYMBOL(rockchip_wifi_reset);
 
+static void rfkill_wlan_sdio_detect_work(struct work_struct *work)
+{
+	struct rfkill_wlan_data *rfkill =
+		container_of(to_delayed_work(work),
+			     struct rfkill_wlan_data, sdio_detect_work);
+	int ret;
+
+	ret = rockchip_wifi_set_carddetect(1);
+	if (!ret) {
+		LOG("%s: triggered SDIO detect successfully\n", __func__);
+		return;
+	}
+
+	if (rfkill->sdio_detect_retries-- > 0) {
+		LOG("%s: SDIO host not ready yet, retrying (%d left)\n",
+		    __func__, rfkill->sdio_detect_retries);
+		schedule_delayed_work(&rfkill->sdio_detect_work,
+				      msecs_to_jiffies(WLAN_SDIO_DETECT_RETRY_MS));
+	} else {
+		LOG("%s: SDIO host detect retries exhausted\n", __func__);
+	}
+}
+
 /**************************************************************************
  *
  * Wifi MAC custom Func
@@ -490,22 +519,19 @@ static int get_wifi_addr_vendor(unsigned char *addr)
 	if (ret != 6 || is_zero_ether_addr(addr)) {
 		LOG("%s: rk_vendor_read wifi mac address failed (%d)\n",
 		    __func__, ret);
-#ifdef CONFIG_WIFI_GENERATE_RANDOM_MAC_ADDR
 		random_ether_addr(addr);
 		LOG("%s: generate random wifi mac address: "
 		    "%02x:%02x:%02x:%02x:%02x:%02x\n",
 		    __func__, addr[0], addr[1], addr[2],
 		    addr[3], addr[4], addr[5]);
+#ifdef CONFIG_WIFI_GENERATE_RANDOM_MAC_ADDR
 		ret = rk_vendor_write(WIFI_MAC_ID, addr, 6);
 		if (ret != 0) {
 			LOG("%s: rk_vendor_write"
-				" wifi mac address failed (%d)\n",
+				" wifi mac address failed (%d), "
+				"keeping random address in memory\n",
 				__func__, ret);
-			memset(addr, 0, 6);
-			return -1;
 		}
-#else
-		return -1;
 #endif
 	} else {
 		LOG("%s: rk_vendor_read wifi mac address: "
@@ -524,8 +550,15 @@ int rockchip_wifi_mac_addr(unsigned char *buf)
 
 	// from vendor storage
 	if (is_zero_ether_addr(wifi_custom_mac_addr)) {
-		if (get_wifi_addr_vendor(wifi_custom_mac_addr) != 0)
-			return -1;
+		if (get_wifi_addr_vendor(wifi_custom_mac_addr) != 0) {
+			random_ether_addr(wifi_custom_mac_addr);
+			LOG("%s: fallback to volatile random wifi mac address: "
+			    "%02x:%02x:%02x:%02x:%02x:%02x\n",
+			    __func__, wifi_custom_mac_addr[0],
+			    wifi_custom_mac_addr[1], wifi_custom_mac_addr[2],
+			    wifi_custom_mac_addr[3], wifi_custom_mac_addr[4],
+			    wifi_custom_mac_addr[5]);
+		}
 	}
 
 	sprintf(mac_buf, "%02x:%02x:%02x:%02x:%02x:%02x",
@@ -800,7 +833,11 @@ static int rfkill_wlan_probe(struct platform_device *pdev)
         goto rfkill_alloc_fail;
 
 	rfkill->pdata = pdata;
+	rfkill->sdio_detect_retries = WLAN_SDIO_DETECT_MAX_RETRIES;
+	INIT_DELAYED_WORK(&rfkill->sdio_detect_work,
+			  rfkill_wlan_sdio_detect_work);
     g_rfkill = rfkill;
+	platform_set_drvdata(pdev, rfkill);
 
     LOG("%s: init gpio\n", __func__);
 
@@ -832,6 +869,7 @@ static int rfkill_wlan_probe(struct platform_device *pdev)
     if (pdata->wifi_power_remain)
     {
         rockchip_wifi_power(1);
+        schedule_delayed_work(&rfkill->sdio_detect_work, 0);
     }
 
 #if BCM_STATIC_MEMORY_SUPPORT
@@ -864,6 +902,7 @@ static int rfkill_wlan_remove(struct platform_device *pdev)
 
     LOG("Enter %s\n", __func__);
 
+    cancel_delayed_work_sync(&rfkill->sdio_detect_work);
     wake_lock_destroy(&rfkill->wlan_irq_wl);
 
     fb_unregister_client(&rfkill_wlan_fb_notifier);

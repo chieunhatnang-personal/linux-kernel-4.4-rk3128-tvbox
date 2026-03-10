@@ -510,8 +510,18 @@ int mmc_host_rescan(struct mmc_host *host, int val, int is_cap_sdio_irq)
 		return -ENOMEDIUM;
 	}
 
-	if (!(host->caps & MMC_CAP_NONREMOVABLE) && host->ops->set_sdio_status)
+	/*
+	 * Allow software-triggered reprobe for soldered-on SDIO devices.
+	 * The core scans non-removable slots only once unless this flag is
+	 * cleared before scheduling detect work again.
+	 */
+	if (val && (host->caps & MMC_CAP_NONREMOVABLE))
+		host->rescan_entered = 0;
+
+	if (host->ops->set_sdio_status)
 		host->ops->set_sdio_status(host, val);
+	else if (val)
+		mmc_detect_change(host, msecs_to_jiffies(20));
 
 	return 0;
 }

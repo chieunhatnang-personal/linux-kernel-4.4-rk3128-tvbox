@@ -3493,7 +3493,7 @@ int dw_mci_probe(struct dw_mci *host)
 	for (i = 0; i < host->num_slots; i++) {
 		ret = dw_mci_init_slot(host, i);
 		if (ret)
-			dev_dbg(host->dev, "slot %d init failed\n", i);
+			dev_err(host->dev, "slot %d init failed: %d\n", i, ret);
 		else
 			init_slots++;
 	}
