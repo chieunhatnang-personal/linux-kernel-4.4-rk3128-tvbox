@@ -14,6 +14,7 @@
 #include <linux/export.h>
 #include <linux/device.h>
 #include <linux/err.h>
+#include <linux/jiffies.h>
 #include <linux/slab.h>
 #include <linux/stat.h>
 #include <linux/of.h>
@@ -370,6 +371,9 @@ int mmc_add_card(struct mmc_card *card)
  */
 void mmc_remove_card(struct mmc_card *card)
 {
+	struct mmc_host *host = card->host;
+	bool retrigger_nonremovable_sdio = false;
+
 #ifdef CONFIG_DEBUG_FS
 	mmc_remove_card_debugfs(card);
 #endif
@@ -384,8 +388,26 @@ void mmc_remove_card(struct mmc_card *card)
 		}
 		device_del(&card->dev);
 		of_node_put(card->dev.of_node);
+
+		/*
+		 * Some soldered-on SDIO parts, including ESP8089, can reset
+		 * themselves during first probe and briefly disappear before
+		 * the working enumeration. Re-arm detection so the host scans
+		 * again after this removal.
+		 */
+		retrigger_nonremovable_sdio =
+			card == host->card &&
+			card->type == MMC_TYPE_SDIO &&
+			(host->caps & MMC_CAP_NONREMOVABLE) &&
+			(host->restrict_caps & RESTRICT_CARD_TYPE_SDIO);
 	}
 
 	put_device(&card->dev);
-}
 
+	if (retrigger_nonremovable_sdio) {
+		host->rescan_entered = 0;
+		pr_info("%s: re-triggering detect for non-removable SDIO card\n",
+			mmc_hostname(host));
+		mmc_detect_change(host, msecs_to_jiffies(200));
+	}
+}

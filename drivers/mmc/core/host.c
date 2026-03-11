@@ -518,7 +518,10 @@ int mmc_host_rescan(struct mmc_host *host, int val, int is_cap_sdio_irq)
 	if (val && (host->caps & MMC_CAP_NONREMOVABLE))
 		host->rescan_entered = 0;
 
-	if (host->ops->set_sdio_status)
+	if (!val && (host->caps & MMC_CAP_NONREMOVABLE) &&
+	    host->bus_ops && !host->bus_dead && host->bus_ops->detect) {
+		host->bus_ops->detect(host);
+	} else if (host->ops->set_sdio_status)
 		host->ops->set_sdio_status(host, val);
 	else if (val)
 		mmc_detect_change(host, msecs_to_jiffies(20));

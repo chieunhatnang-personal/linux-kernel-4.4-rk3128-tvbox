@@ -141,6 +141,9 @@ static int sdio_bus_probe(struct device *dev)
 	if (!id)
 		return -ENODEV;
 
+	dev_info(dev, "sdio bus probe: driver=%s class=0x%02x vendor=0x%04x device=0x%04x func=%d\n",
+		 drv->name, func->class, func->vendor, func->device, func->num);
+
 	ret = dev_pm_domain_attach(dev, false);
 	if (ret == -EPROBE_DEFER)
 		return ret;
@@ -166,8 +169,13 @@ static int sdio_bus_probe(struct device *dev)
 		goto disable_runtimepm;
 
 	ret = drv->probe(func, id);
-	if (ret)
+	if (ret) {
+		dev_err(dev, "sdio bus probe failed: driver=%s ret=%d\n",
+			drv->name, ret);
 		goto disable_runtimepm;
+	}
+
+	dev_info(dev, "sdio bus probe success: driver=%s\n", drv->name);
 
 	return 0;
 
@@ -183,6 +191,9 @@ static int sdio_bus_remove(struct device *dev)
 	struct sdio_driver *drv = to_sdio_driver(dev->driver);
 	struct sdio_func *func = dev_to_sdio_func(dev);
 	int ret = 0;
+
+	dev_info(dev, "sdio bus remove: driver=%s class=0x%02x vendor=0x%04x device=0x%04x func=%d\n",
+		 drv->name, func->class, func->vendor, func->device, func->num);
 
 	/* Make sure card is powered before invoking ->remove() */
 	if (func->card->host->caps & MMC_CAP_POWER_OFF_CARD)
@@ -345,8 +356,14 @@ int sdio_add_func(struct sdio_func *func)
 	sdio_acpi_set_handle(func);
 	device_enable_async_suspend(&func->dev);
 	ret = device_add(&func->dev);
-	if (ret == 0)
+	if (ret == 0) {
 		sdio_func_set_present(func);
+		dev_info(&func->dev,
+			 "sdio function added: class=0x%02x vendor=0x%04x device=0x%04x func=%d\n",
+			 func->class, func->vendor, func->device, func->num);
+	} else {
+		dev_err(&func->dev, "sdio function add failed: ret=%d\n", ret);
+	}
 
 	return ret;
 }
@@ -366,4 +383,3 @@ void sdio_remove_func(struct sdio_func *func)
 	of_node_put(func->dev.of_node);
 	put_device(&func->dev);
 }
-
