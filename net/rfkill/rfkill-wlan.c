@@ -40,7 +40,6 @@
 #include <linux/mfd/syscon.h>
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
-#include <linux/mmc/sdio_func.h>
 #include <linux/workqueue.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -64,7 +63,6 @@ struct rfkill_wlan_data {
 	struct rksdmmc_gpio_wifi_moudle *pdata;
     struct wake_lock            wlan_irq_wl;
 	struct delayed_work         sdio_detect_work;
-	struct delayed_work         esp8089_bootstrap_work;
 	int                         sdio_detect_retries;
 };
 
@@ -498,44 +496,6 @@ static void rfkill_wlan_sdio_detect_work(struct work_struct *work)
 	}
 }
 
-static void rfkill_wlan_esp8089_bootstrap_work(struct work_struct *work)
-{
-	struct rfkill_wlan_data *rfkill =
-		container_of(to_delayed_work(work),
-			     struct rfkill_wlan_data,
-			     esp8089_bootstrap_work);
-	int ret;
-
-	if (get_wifi_chip_type() != WIFI_ESP8089)
-		return;
-
-	if (primary_sdio_host && primary_sdio_host->card &&
-	    primary_sdio_host->card->type == MMC_TYPE_SDIO &&
-	    primary_sdio_host->card->sdio_func[0] &&
-	    primary_sdio_host->card->sdio_func[0]->dev.driver) {
-		LOG("%s: ESP8089 already bound to %s, skip bootstrap\n",
-		    __func__,
-		    primary_sdio_host->card->sdio_func[0]->dev.driver->name);
-		return;
-	}
-
-	ret = request_module("esp8089");
-	LOG("%s: request_module(\"esp8089\") returned %d\n", __func__, ret);
-
-	/*
-	 * The ESP8089 module may only become available after rootfs is up.
-	 * If the chip was already enumerated before that, force a clean
-	 * power cycle and SDIO rescan so probe sees a fresh device.
-	 */
-	rockchip_wifi_power(0);
-	msleep(200);
-	rockchip_wifi_power(1);
-
-	rfkill->sdio_detect_retries = WLAN_SDIO_DETECT_MAX_RETRIES;
-	schedule_delayed_work(&rfkill->sdio_detect_work,
-			      msecs_to_jiffies(300));
-}
-
 /**************************************************************************
  *
  * Wifi MAC custom Func
@@ -878,8 +838,6 @@ static int rfkill_wlan_probe(struct platform_device *pdev)
 	rfkill->sdio_detect_retries = WLAN_SDIO_DETECT_MAX_RETRIES;
 	INIT_DELAYED_WORK(&rfkill->sdio_detect_work,
 			  rfkill_wlan_sdio_detect_work);
-	INIT_DELAYED_WORK(&rfkill->esp8089_bootstrap_work,
-			  rfkill_wlan_esp8089_bootstrap_work);
     g_rfkill = rfkill;
 	platform_set_drvdata(pdev, rfkill);
 
@@ -914,10 +872,6 @@ static int rfkill_wlan_probe(struct platform_device *pdev)
     {
         rockchip_wifi_power(1);
         schedule_delayed_work(&rfkill->sdio_detect_work, 0);
-
-		if (get_wifi_chip_type() == WIFI_ESP8089)
-			schedule_delayed_work(&rfkill->esp8089_bootstrap_work,
-					      msecs_to_jiffies(25000));
     }
 
 #if BCM_STATIC_MEMORY_SUPPORT
@@ -951,7 +905,6 @@ static int rfkill_wlan_remove(struct platform_device *pdev)
     LOG("Enter %s\n", __func__);
 
     cancel_delayed_work_sync(&rfkill->sdio_detect_work);
-    cancel_delayed_work_sync(&rfkill->esp8089_bootstrap_work);
     wake_lock_destroy(&rfkill->wlan_irq_wl);
 
     fb_unregister_client(&rfkill_wlan_fb_notifier);
