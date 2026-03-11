@@ -519,7 +519,21 @@ int mmc_host_rescan(struct mmc_host *host, int val, int is_cap_sdio_irq)
 		host->rescan_entered = 0;
 
 	if (!val && (host->caps & MMC_CAP_NONREMOVABLE) &&
-	    host->bus_ops && !host->bus_dead && host->bus_ops->detect) {
+	    host->bus_ops && !host->bus_dead &&
+	    host->card && host->card->type == MMC_TYPE_SDIO) {
+		/*
+		 * Software card-detect is used by soldered-on Wi-Fi parts such
+		 * as ESP8089 to force a remove/re-enumerate cycle. The generic
+		 * detect path refuses to remove non-removable cards, so perform
+		 * the same teardown sequence as a real SDIO removal.
+		 */
+		mmc_claim_host(host);
+		host->bus_ops->remove(host);
+		mmc_detach_bus(host);
+		mmc_power_off(host);
+		mmc_release_host(host);
+	} else if (!val && (host->caps & MMC_CAP_NONREMOVABLE) &&
+		   host->bus_ops && !host->bus_dead && host->bus_ops->detect) {
 		host->bus_ops->detect(host);
 	} else if (host->ops->set_sdio_status)
 		host->ops->set_sdio_status(host, val);
