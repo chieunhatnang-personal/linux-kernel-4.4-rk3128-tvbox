@@ -140,11 +140,11 @@ int esp_pub_init_all(struct esp_pub *epub)
 		ret = sip_poll_bootup_event(epub->sip);
 	} else {
 		ret = sip_poll_resetting_event(epub->sip);
-        if (ret == 0) {
-            sif_lock_bus(epub);
-            sif_interrupt_target(epub, 7);
-            sif_unlock_bus(epub);
-        }
+		if (ret == 0) {
+			sif_lock_bus(epub);
+			sif_interrupt_target(epub, 7);
+			sif_unlock_bus(epub);
+		}
 		
 	}
 
@@ -267,7 +267,3 @@ _err:
 
 }
 #endif /* !FPGA_DEBUG */
-
-
-
-

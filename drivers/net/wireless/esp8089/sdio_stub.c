@@ -4,22 +4,23 @@
  *  sdio stub code for RK
  */
 
-#include <linux/gpio/driver.h>
 #include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
+#include <linux/rfkill-wlan.h>
 
 //#include <mach/iomux.h>
 
-/* reset GPIO parameter defaults to GPIO 0 (ID_SD) on the Raspberry Pi */
+/*
+ * Keep the module parameter for compatibility, but Rockchip boards use the
+ * existing rfkill power hook instead of a direct GPIO reset from this driver.
+ */
 static int esp_reset_gpio = 0;
 module_param(esp_reset_gpio, int, 0);
 MODULE_PARM_DESC(esp_reset_gpio, "ESP8089 CH_PD reset GPIO number");
 
 #define ESP8089_DRV_VERSION "1.9"
 
-extern int rk29sdk_wifi_power(int on);
-extern int rk29sdk_wifi_set_carddetect(int val);
 int rockchip_wifi_init_module(void)
 {	
 	return esp_sdio_init();		
@@ -32,46 +33,31 @@ void rockchip_wifi_exit_module(void)
 }
 void sif_platform_rescan_card(unsigned insert)
 {
+	printk("ESP8089 rescan card: %u\n", insert);
+	rockchip_wifi_set_carddetect(insert ? 1 : 0);
 }
-
-static int is_pi_gpio(struct gpio_chip *chip, void *data)
-{
-	if (strcmp(data, chip->label) == 0)
-		return 1;
-	return 0;
-}
-
-#define PINCTRL_CHIP "pinctrl-bcm2835"
 
 void sif_platform_reset_target(void)
 {
-
-	printk("ESP8089 reset via GPIO %d\n", esp_reset_gpio);
-
-	/* Temporary hack for GPIO access 'til I stop being lazy and get this
-	 * working with gpiod and a corresponding dt overlay. Embarrassingly
-	 * specific to Pi3 and earlier.
-	 */
-	struct gpio_chip *chip = gpiochip_find(PINCTRL_CHIP, is_pi_gpio);
-	if (!chip) {
-		printk("Couldn't find libgpio chip for GPIO!\n");
-	}
-	else {
-		chip->direction_output(chip, esp_reset_gpio, 0);
-		msleep(200);
-		chip->direction_input(chip, esp_reset_gpio);
-    	}
+	printk("ESP8089 reset via Rockchip WiFi power hook\n");
+	rockchip_wifi_power(0);
+	msleep(200);
+	rockchip_wifi_power(1);
+	msleep(200);
 }
 
 void sif_platform_target_poweroff(void)
 {
-	/* reset ESP before unload so that the esp can be probed on
-	 * warm reboot */
-	sif_platform_reset_target();
+	printk("ESP8089 power off via Rockchip WiFi power hook\n");
+	rockchip_wifi_power(0);
+	msleep(200);
+	rockchip_wifi_set_carddetect(0);
+	msleep(50);
 }
 
 void sif_platform_target_poweron(void)
 {
+	printk("ESP8089 power on via Rockchip WiFi power hook\n");
 	sif_platform_reset_target();
 }
 

@@ -808,6 +808,7 @@ static int /*__init*/ esp_sdio_init(void)
         ver = DRIVER_VER;
         esp_dbg(ESP_SHOW, "\n***** EAGLE DRIVER VER:%llx*****\n\n", ver);
 #endif
+        printk(KERN_INFO "\n========= ESP8089 driver modified by https://chieunhatnang.de =========\n");
         edf_ret = esp_debugfs_init();
 
 	request_init_conf();
@@ -842,8 +843,6 @@ static int /*__init*/ esp_sdio_init(void)
 		sif_record_retry_config();
 
                 sdio_unregister_driver(&esp_sdio_dummy_driver);
-
-                sif_platform_rescan_card(0);
                 
                 sif_platform_target_poweroff();
                 
@@ -866,21 +865,22 @@ static int /*__init*/ esp_sdio_init(void)
         sdio_register_driver(&esp_sdio_driver);
 
         if ((down_timeout(&esp_powerup_sem,
-                                 msecs_to_jiffies(ESP_WAIT_UP_TIME_MS)) == 0 ) && sif_get_ate_config() == 0) {
-		if(sif_sdio_state == ESP_SDIO_STATE_FIRST_NORMAL_EXIT){
-                	sdio_unregister_driver(&esp_sdio_driver);
+                                 msecs_to_jiffies(ESP_WAIT_UP_TIME_MS)) == 0 ) &&
+            sif_get_ate_config() == 0 &&
+            sif_sdio_state == ESP_SDIO_STATE_FIRST_NORMAL_EXIT) {
+		esp_dbg(ESP_SHOW, "%s starting second SDIO init with card rescan\n",
+			__func__);
+		sdio_unregister_driver(&esp_sdio_driver);
 
-                	sif_platform_rescan_card(0);
+		msleep(100);
+		sif_platform_rescan_card(0);
+		msleep(200);
 
-			msleep(100);
-                
-			sif_platform_rescan_card(1);
+		sif_sdio_state = ESP_SDIO_STATE_SECOND_INIT;
 
-			sif_sdio_state = ESP_SDIO_STATE_SECOND_INIT;
-        	
-			sdio_register_driver(&esp_sdio_driver);
-		}
-                
+		sdio_register_driver(&esp_sdio_driver);
+		msleep(100);
+		sif_platform_rescan_card(1);
         }
 
 
@@ -903,9 +903,7 @@ static void  /*__exit*/ esp_sdio_exit(void)
 	
         esp_unregister_early_suspend();
 
-	sdio_unregister_driver(&esp_sdio_driver);
-	
-	sif_platform_rescan_card(0);
+        sdio_unregister_driver(&esp_sdio_driver);
 
 #ifndef FPGA_DEBUG
 	sif_platform_target_poweroff();

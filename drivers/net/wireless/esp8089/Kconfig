@@ -1,0 +1,9 @@
+config ESP8089
+	tristate "Espressif ESP8089 SDIO WiFi support"
+	depends on WL_ROCKCHIP && MMC
+	help
+	  This enables the Espressif ESP8089 SDIO wireless LAN driver
+	  integrated with the Rockchip rfkill and SDIO bring-up path.
+
+	  To compile this driver as a module, choose M here. The module
+	  will be called esp8089.

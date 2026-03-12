@@ -2211,6 +2211,8 @@ sip_poll_bootup_event(struct esp_sip *sip)
 
 	if(sif_get_ate_config() == 0){
 		ret = esp_register_mac80211(sip->epub);
+		printk("esp8089: %s esp_register_mac80211 returned %d\n",
+		       __func__, ret);
 	}
 
 #ifdef TEST_MODE

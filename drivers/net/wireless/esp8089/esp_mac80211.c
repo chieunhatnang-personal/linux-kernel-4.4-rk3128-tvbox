@@ -205,6 +205,7 @@ static int esp_op_add_interface(struct ieee80211_hw *hw,
 	ESP_IEEE80211_DBG(ESP_DBG_OP, "%s enter: type %d, addr %pM\n", __func__, vif->type, conf->mac_addr);
 #else
 	ESP_IEEE80211_DBG(ESP_DBG_OP, "%s enter: type %d, addr %pM\n", __func__, vif->type, vif->addr);
+	printk("esp8089: %s type=%d addr=%pM\n", __func__, vif->type, vif->addr);
 #endif
 
 	memset(&svif, 0, sizeof(struct sip_cmd_setvif));
@@ -220,12 +221,14 @@ static int esp_op_add_interface(struct ieee80211_hw *hw,
 	svif.set = 1;
 	if((1 << svif.index) & epub->vif_slot){
 		ESP_IEEE80211_DBG(ESP_DBG_ERROR, "%s interface %d already used\n", __func__, svif.index);
+		printk("esp8089: %s interface %d already used\n", __func__, svif.index);
 		return -EOPNOTSUPP;
 	}
 	epub->vif_slot |= 1 << svif.index;
 
 	if (svif.index == ESP_PUB_MAX_VIF) {
 		ESP_IEEE80211_DBG(ESP_DBG_ERROR, "%s only support MAX %d interface\n", __func__, ESP_PUB_MAX_VIF);
+		printk("esp8089: %s invalid interface index %d\n", __func__, svif.index);
 		return -EOPNOTSUPP;
 	}
 
@@ -261,10 +264,13 @@ static int esp_op_add_interface(struct ieee80211_hw *hw,
 		case NL80211_IFTYPE_MONITOR:
 		default:
 			ESP_IEEE80211_DBG(ESP_DBG_ERROR, "%s does NOT support type %d\n", __func__, vif->type);
+			printk("esp8089: %s unsupported interface type %d\n", __func__, vif->type);
 			return -EOPNOTSUPP;
 	}
 
 	sip_cmd(epub, SIP_CMD_SETVIF, (u8 *)&svif, sizeof(struct sip_cmd_setvif));
+	printk("esp8089: %s configured interface index %d mode %d p2p %d\n",
+	       __func__, svif.index, svif.op_mode, svif.is_p2p);
 	return 0;
 }
 
@@ -1635,7 +1641,7 @@ static int esp_op_ampdu_action(struct ieee80211_hw *hw,
                                struct ieee80211_sta *sta, u16 tid, u16 *ssn,
                                u8 buf_size)
 #else
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 6, 0))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 4, 0))
 static int esp_op_ampdu_action(struct ieee80211_hw *hw,
                                struct ieee80211_vif *vif,
                                enum ieee80211_ampdu_mlme_action action,
@@ -1652,7 +1658,7 @@ static int esp_op_ampdu_action(struct ieee80211_hw *hw,
 {
         int ret = -EOPNOTSUPP;
         struct esp_pub *epub = (struct esp_pub *)hw->priv;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 6, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 4, 0))
 	enum ieee80211_ampdu_mlme_action action = params->action;
 	struct ieee80211_sta *sta = params->sta;
 	u16 tid = params->tid;
@@ -2330,10 +2336,12 @@ esp_register_mac80211(struct esp_pub *epub)
         SET_IEEE80211_PERM_ADDR(epub->hw, epub->mac_addr);
 #endif
 
-        ret = ieee80211_register_hw(epub->hw);
+	ret = ieee80211_register_hw(epub->hw);
+	printk("esp8089: ieee80211_register_hw returned %d\n", ret);
 
         if (ret < 0) {
                 ESP_IEEE80211_DBG(ESP_DBG_ERROR, "unable to register mac80211 hw: %d\n", ret);
+                printk("esp8089: unable to register mac80211 hw: %d\n", ret);
                 return ret;
         } else {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 37))
@@ -2352,6 +2360,8 @@ esp_register_mac80211(struct esp_pub *epub)
 #endif
 #endif
 	}
+	printk("esp8089: mac80211 registered, interface_modes=0x%x perm_addr=%pM\n",
+	       epub->hw->wiphy->interface_modes, epub->mac_addr);
 
         set_bit(ESP_WL_FLAG_HW_REGISTERED, &epub->wl.flags);
 
@@ -2370,4 +2380,3 @@ static u8 getaddr_index(u8 * addr, struct esp_pub *epub)
 	return 0;
 #endif
 }
-
