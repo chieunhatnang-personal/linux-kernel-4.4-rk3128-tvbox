@@ -16,6 +16,8 @@
 #include <linux/initrd.h>
 #include <linux/console.h>
 #include <linux/bootmem.h>
+#include <linux/clk.h>
+#include <linux/cpufreq.h>
 #include <linux/seq_file.h>
 #include <linux/screen_info.h>
 #include <linux/of_iommu.h>
@@ -1076,6 +1078,42 @@ static const char *hwcap2_str[] = {
 	NULL
 };
 
+static unsigned int cpuinfo_armclk_khz(void)
+{
+	struct device_node *np;
+	struct clk *clk;
+	unsigned long rate = 0;
+
+	/*
+	 * RK3128 exposes the shared CPU clock from cpu0. Use it as a fallback
+	 * when cpufreq doesn't have a live policy value for /proc/cpuinfo.
+	 */
+	np = of_get_cpu_node(0, NULL);
+	if (!np)
+		return 0;
+
+	clk = of_clk_get(np, 0);
+	of_node_put(np);
+	if (IS_ERR(clk))
+		return 0;
+
+	rate = clk_get_rate(clk);
+	clk_put(clk);
+
+	return rate / 1000;
+}
+
+static unsigned int cpuinfo_cur_freq_khz(unsigned int cpu)
+{
+#ifdef CONFIG_CPU_FREQ
+	unsigned int freq = cpufreq_quick_get(cpu);
+
+	if (freq)
+		return freq;
+#endif
+	return cpuinfo_armclk_khz();
+}
+
 static int c_show(struct seq_file *m, void *v)
 {
 	int i, j;
@@ -1101,6 +1139,13 @@ static int c_show(struct seq_file *m, void *v)
 			   loops_per_jiffy / (500000/HZ),
 			   (loops_per_jiffy / (5000/HZ)) % 100);
 #endif
+		{
+			unsigned int freq = cpuinfo_cur_freq_khz(i);
+
+			if (freq)
+				seq_printf(m, "cpu MHz\t\t: %u.%03u\n",
+					   freq / 1000, freq % 1000);
+		}
 		/* dump out the processor features */
 		seq_puts(m, "Features\t: ");
 
