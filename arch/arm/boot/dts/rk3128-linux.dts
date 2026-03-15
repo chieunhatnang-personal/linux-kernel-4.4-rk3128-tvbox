@@ -88,6 +88,38 @@
 		regulator-always-on;
 		regulator-boot-on;
 	};
+
+	/*
+	 * This board follows the RK322x-style power tree for the CPU/GPU
+	 * rails: both are driven directly from PWM regulators, not an RK816.
+	 */
+	cpu_vdd_arm: vdd-arm-regulator {
+		compatible = "pwm-regulator";
+		rockchip,pwm_id = <1>;
+		rockchip,pwm_voltage = <1100000>;
+		pwms = <&pwm1 0 5000 1>;
+		regulator-name = "vdd_arm";
+		regulator-min-microvolt = <950000>;
+		regulator-max-microvolt = <1400000>;
+		regulator-ramp-delay = <12500>;
+		regulator-settling-time-up-us = <250>;
+		regulator-always-on;
+		regulator-boot-on;
+	};
+
+	logic_vdd_log: vdd-log-regulator {
+		compatible = "pwm-regulator";
+		rockchip,pwm_id = <2>;
+		rockchip,pwm_voltage = <1200000>;
+		pwms = <&pwm2 0 5000 1>;
+		regulator-name = "vdd_log";
+		regulator-min-microvolt = <1000000>;
+		regulator-max-microvolt = <1300000>;
+		regulator-ramp-delay = <12500>;
+		regulator-settling-time-up-us = <250>;
+		regulator-always-on;
+		regulator-boot-on;
+	};
 	
 	xin32k: xin32k {
 		compatible = "fixed-clock";
@@ -124,20 +156,84 @@
 };
 
 &cpu0 {
-	cpu-supply = <&vdd_arm>;
+	cpu-supply = <&cpu_vdd_arm>;
 	clock-frequency = <1200000000>;
 };
 
 &cpu1 {
+	cpu-supply = <&cpu_vdd_arm>;
 	clock-frequency = <1200000000>;
 };
 
 &cpu2 {
+	cpu-supply = <&cpu_vdd_arm>;
 	clock-frequency = <1200000000>;
 };
 
 &cpu3 {
+	cpu-supply = <&cpu_vdd_arm>;
 	clock-frequency = <1200000000>;
+};
+
+/*
+ * Keep the RK3128 board's CPU DVFS table local to this DTS so the
+ * frequencies and voltages stay aligned with the board's PWM CPU rail.
+ * Values are based on the vendor Android RK3128 table with the lower
+ * frequency steps filled in from the RK322x-style vendor OPP layout.
+ */
+&cpu0_opp_table {
+	rockchip,leakage-scaling-sel = <
+		1   254   0
+	>;
+	rockchip,leakage-voltage-sel = <
+		1   14   0
+		15  35   1
+		36  254  2
+	>;
+
+	/delete-node/ opp-696000000;
+
+	opp-216000000 {
+		opp-microvolt = <950000 950000 1400000>;
+		opp-microvolt-L0 = <950000 950000 1400000>;
+		opp-microvolt-L1 = <950000 950000 1400000>;
+		opp-microvolt-L2 = <950000 950000 1400000>;
+	};
+
+	opp-408000000 {
+		opp-microvolt = <950000 950000 1400000>;
+		opp-microvolt-L0 = <950000 950000 1400000>;
+		opp-microvolt-L1 = <950000 950000 1400000>;
+		opp-microvolt-L2 = <950000 950000 1400000>;
+	};
+
+	opp-600000000 {
+		opp-microvolt = <975000 975000 1400000>;
+		opp-microvolt-L0 = <950000 950000 1400000>;
+		opp-microvolt-L1 = <950000 950000 1400000>;
+		opp-microvolt-L2 = <950000 950000 1400000>;
+	};
+
+	opp-816000000 {
+		opp-microvolt = <1100000 1100000 1400000>;
+		opp-microvolt-L0 = <1075000 1075000 1400000>;
+		opp-microvolt-L1 = <1050000 1050000 1400000>;
+		opp-microvolt-L2 = <1000000 1000000 1400000>;
+	};
+
+	opp-1008000000 {
+		opp-microvolt = <1200000 1200000 1400000>;
+		opp-microvolt-L0 = <1200000 1200000 1400000>;
+		opp-microvolt-L1 = <1175000 1175000 1400000>;
+		opp-microvolt-L2 = <1125000 1125000 1400000>;
+	};
+
+	opp-1200000000 {
+		opp-microvolt = <1325000 1325000 1400000>;
+		opp-microvolt-L0 = <1325000 1325000 1400000>;
+		opp-microvolt-L1 = <1300000 1300000 1400000>;
+		opp-microvolt-L2 = <1250000 1250000 1400000>;
+	};
 };
 
 /*
@@ -187,7 +283,7 @@
 };
 
 &dmc {
-	center-supply = <&vdd_log>;
+	center-supply = <&logic_vdd_log>;
 };
 
 &emmc {
@@ -217,7 +313,7 @@
 
 &gpu {
 	status = "okay";
-	mali-supply = <&vdd_log>;
+	mali-supply = <&logic_vdd_log>;
 };
 
 &hdmi {
@@ -521,6 +617,14 @@
 };
 
 &pwm0 {
+	status = "okay";
+};
+
+&pwm1 {
+	status = "okay";
+};
+
+&pwm2 {
 	status = "okay";
 };
 

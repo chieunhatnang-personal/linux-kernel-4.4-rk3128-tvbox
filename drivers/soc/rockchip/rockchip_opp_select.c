@@ -610,6 +610,28 @@ void rockchip_of_get_pvtm_sel(struct device *dev, struct device_node *np,
 	int pvtm = -EINVAL, ret;
 	char name[NAME_MAX];
 
+	if (process >= 0) {
+		snprintf(name, sizeof(name),
+			 "rockchip,p%d-pvtm-voltage-sel", process);
+		prop = of_find_property(np, name, NULL);
+		if (!prop) {
+			snprintf(name, sizeof(name),
+				 "rockchip,p%d-pvtm-scaling-sel", process);
+			prop = of_find_property(np, name, NULL);
+		}
+	}
+
+	if (!prop) {
+		prop = of_find_property(np, "rockchip,pvtm-voltage-sel", NULL);
+		if (!prop)
+			prop = of_find_property(np, "rockchip,pvtm-scaling-sel",
+					       NULL);
+	}
+
+	/* No PVTM-based selection configured for this OPP table. */
+	if (!prop)
+		return;
+
 	clk = clk_get(dev, NULL);
 	if (IS_ERR_OR_NULL(clk)) {
 		dev_warn(dev, "Failed to get clk\n");
