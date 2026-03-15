@@ -89,6 +89,17 @@
 		regulator-boot-on;
 	};
 
+	vcc_otg_vbus: otg-vbus-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc_otg_vbus";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		gpio = <&gpio3 RK_PC1 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&otg_vbus_drv>;
+	};
+
 	/*
 	 * This board follows the RK322x-style power tree for the CPU/GPU
 	 * rails: both are driven directly from PWM regulators, not an RK816.
@@ -608,6 +619,13 @@
 		};
 	};
 
+	usb {
+		otg_vbus_drv: otg-vbus-drv {
+			rockchip,pins =
+				<RK_GPIO3 RK_PC1 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
 	wireless-bluetooth {
 		uart1_rts_gpio: uart1-rts-gpio {
 			rockchip,pins = <RK_GPIO1 RK_PB3 RK_FUNC_GPIO &pcfg_pull_none>;
@@ -671,6 +689,7 @@
 	status = "okay";
 
 	u2phy_otg: otg-port {
+		vbus-supply = <&vcc_otg_vbus>;
 		status = "okay";
 	};
 
@@ -686,6 +705,8 @@
 };
 
 &usb_otg {
+	dr_mode = "otg";
+	vbus-supply = <&vcc_otg_vbus>;
 	status = "okay";
 };
 
