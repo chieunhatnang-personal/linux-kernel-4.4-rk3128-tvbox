@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Force the RK3128 OTG port into peripheral mode.
+ */
+
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target = <&usb_otg>;
+		__overlay__ {
+			dr_mode = "peripheral";
+			status = "okay";
+		};
+	};
+};
