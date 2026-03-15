@@ -417,6 +417,7 @@ static void cpufreq_ready(struct cpufreq_policy *policy)
 {
 	struct private_data *priv = policy->driver_data;
 	struct device_node *np = of_node_get(priv->cpu_dev->of_node);
+	struct device_node *model_np = NULL;
 
 	if (WARN_ON(!np))
 		return;
@@ -432,8 +433,13 @@ static void cpufreq_ready(struct cpufreq_policy *policy)
 				     &power_coefficient);
 
 #ifdef CONFIG_ARCH_ROCKCHIP
-		priv->model_data = rockchip_ipa_power_model_init(priv->cpu_dev,
-								 "cpu_leakage");
+		model_np = of_get_compatible_child(np, "simple-power-model");
+		if (model_np)
+			priv->model_data = rockchip_ipa_power_model_init(
+					priv->cpu_dev, "cpu_leakage");
+		else
+			priv->model_data = NULL;
+		of_node_put(model_np);
 		if (!IS_ERR_OR_NULL(priv->model_data)) {
 			priv->cdev = of_cpufreq_power_cooling_register(np,
 					policy->related_cpus, power_coefficient,

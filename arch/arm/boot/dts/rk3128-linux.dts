@@ -663,6 +663,10 @@
 	status = "okay";
 };
 
+&rockchip_system_monitor {
+	rockchip,thermal-zone = "soc-thermal";
+};
+
 &u2phy {
 	status = "okay";
 

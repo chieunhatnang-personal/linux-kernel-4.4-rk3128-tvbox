@@ -975,6 +975,12 @@ rockchip_system_monitor_wide_temp_init(struct monitor_dev_info *info)
 	}
 }
 
+static bool rockchip_monitor_has_wide_temp_config(struct monitor_dev_info *info)
+{
+	return info->is_low_temp_enabled || info->low_limit ||
+	       info->high_limit || info->high_limit_table;
+}
+
 static int system_monitor_devfreq_notifier_call(struct notifier_block *nb,
 						unsigned long event,
 						void *data)
@@ -1127,7 +1133,8 @@ rockchip_system_monitor_register(struct device *dev,
 					       DEVFREQ_POLICY_NOTIFIER);
 	}
 
-	rockchip_system_monitor_wide_temp_init(info);
+	if (system_monitor->tz && rockchip_monitor_has_wide_temp_config(info))
+		rockchip_system_monitor_wide_temp_init(info);
 	mutex_init(&info->volt_adjust_mutex);
 
 	down_write(&mdev_list_sem);
