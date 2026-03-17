@@ -551,6 +551,30 @@ void rockchip_of_get_lkg_sel(struct device *dev, struct device_node *np,
 	int leakage = -EINVAL, ret;
 	char name[NAME_MAX];
 
+	if (process >= 0) {
+		snprintf(name, sizeof(name),
+			 "rockchip,p%d-leakage-voltage-sel", process);
+		prop = of_find_property(np, name, NULL);
+		if (!prop) {
+			snprintf(name, sizeof(name),
+				 "rockchip,p%d-leakage-scaling-sel", process);
+			prop = of_find_property(np, name, NULL);
+		}
+	}
+
+	if (!prop) {
+		prop = of_find_property(np, "rockchip,leakage-voltage-sel",
+					NULL);
+		if (!prop)
+			prop = of_find_property(np,
+						"rockchip,leakage-scaling-sel",
+						NULL);
+	}
+
+	/* No leakage-based OPP selection configured for this OPP table. */
+	if (!prop)
+		return;
+
 	cell = of_nvmem_cell_get(np, "leakage");
 	if (IS_ERR(cell)) {
 		ret = rockchip_get_efuse_value(np, lkg_name, &leakage);
