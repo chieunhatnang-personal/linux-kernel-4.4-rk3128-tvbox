@@ -690,13 +690,13 @@
 	cap-sd-highspeed;
 	supports-sd;
 	vmmc-supply = <&vcc_sdmmc>;
-	bus-width = <1>;
+	bus-width = <4>;
 	broken-cd;
 	card-detect-delay = <800>;
 	disable-wp;
 	ignore-pm-notify;
 	keep-power-in-suspend;
-	pinctrl-0 = <&sdmmc_clk &sdmmc_cmd &sdmmc_bus1_diag>;
+	pinctrl-0 = <&sdmmc_clk &sdmmc_cmd &sdmmc_bus4>;
 	status = "okay";
 };
 
