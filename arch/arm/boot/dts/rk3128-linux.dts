@@ -160,6 +160,16 @@
 		#clock-cells = <0>;
 	};
 
+	wireless-wlan {
+		compatible = "wlan-platdata";
+		rockchip,grf = <&grf>;
+		wifi_chip_type = "esp8089";
+		sdio_vref = <0>;
+		WIFI,poweren_gpio = <&gpio0 RK_PD6 GPIO_ACTIVE_HIGH>;
+		WIFI,host_wake_irq = <&gpio0 RK_PA2 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
+
 	wireless-bluetooth {
 		compatible = "bluetooth-platdata";
 
@@ -691,12 +701,17 @@
 };
 
 &sdio {
+	/delete-property/ dmas;
+	/delete-property/ dma-names;
 	max-frequency = <37500000>;
 	cap-sd-highspeed;
 	cap-sdio-irq;
 	supports-sdio;
+	disable-wp;
 	ignore-pm-notify;
 	keep-power-in-suspend;
+	pinctrl-names = "default";
+	pinctrl-0 = <&sdio_cmd &sdio_clk &sdio_bus4>;
 	non-removable;
 	/* vmmc-supply = <&ldo5>; */
 	status = "okay";
