@@ -8,10 +8,6 @@
 #include <dt-bindings/display/media-bus-format.h>
 
 / {
-	chosen {
-		bootargs = "earlycon=uart8250,mmio32,0x20068000";
-	};
-
 	cpuinfo {
 		compatible = "rockchip,cpuinfo";
 		nvmem-cells = <&efuse_id>;

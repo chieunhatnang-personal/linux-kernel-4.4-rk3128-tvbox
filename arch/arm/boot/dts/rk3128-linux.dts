@@ -16,6 +16,14 @@
 	model = "Rockchip RK3128 Linux board";
 	compatible = "rockchip,rk3128";
 
+	chosen {
+		stdout-path = "serial1:115200n8";
+	};
+
+	fiq-debugger {
+		status = "disabled";
+	};
+
 	adc-keys {
 		compatible = "adc-keys";
 		io-channels = <&saradc 2>;
@@ -98,6 +106,18 @@
 		gpio = <&gpio3 RK_PC1 GPIO_ACTIVE_HIGH>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&otg_vbus_drv>;
+	};
+
+	vcc_sdmmc: vcc-sdmmc {
+		compatible = "regulator-fixed";
+		gpio = <&gpio1 RK_PB6 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		pinctrl-names = "default";
+		pinctrl-0 = <&sdmmc_pwren>;
+		regulator-name = "vcc_sdmmc";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-boot-on;
 	};
 
 	/*
@@ -604,6 +624,12 @@
 };
 
 &pinctrl {
+	sdmmc-diag {
+		sdmmc_bus1_diag: sdmmc-bus1-diag {
+			rockchip,pins = <1 RK_PC2 1 &pcfg_pull_default>;
+		};
+	};
+
 	pmic {
 		pmic_int_l: pmic-int-l {
 			rockchip,pins =
@@ -648,13 +674,20 @@
 };
 
 &sdmmc {
+	/delete-property/ dmas;
+	/delete-property/ dma-names;
 	cap-mmc-highspeed;
+	cap-sd-highspeed;
 	supports-sd;
+	vmmc-supply = <&vcc_sdmmc>;
+	bus-width = <1>;
+	broken-cd;
 	card-detect-delay = <800>;
+	disable-wp;
 	ignore-pm-notify;
 	keep-power-in-suspend;
-	cd-gpios = <&gpio2 7 GPIO_ACTIVE_LOW>; /* CD GPIO */
-	status = "disabled";
+	pinctrl-0 = <&sdmmc_clk &sdmmc_cmd &sdmmc_bus1_diag>;
+	status = "okay";
 };
 
 &sdio {
