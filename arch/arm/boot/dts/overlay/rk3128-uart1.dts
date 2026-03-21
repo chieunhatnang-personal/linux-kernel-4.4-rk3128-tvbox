@@ -1,0 +1,24 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Route the kernel console to UART1.
+ */
+
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target-path = "/chosen";
+		__overlay__ {
+			stdout-path = "serial1:115200n8";
+			bootargs = "earlycon=uart8250,mmio32,0x20064000 console=ttyS1,115200n8";
+		};
+	};
+
+	fragment@1 {
+		target = <&uart1>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+};

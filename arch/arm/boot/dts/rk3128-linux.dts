@@ -108,18 +108,6 @@
 		pinctrl-0 = <&otg_vbus_drv>;
 	};
 
-	vcc_sdmmc: vcc-sdmmc {
-		compatible = "regulator-fixed";
-		gpio = <&gpio1 RK_PB6 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-		pinctrl-names = "default";
-		pinctrl-0 = <&sdmmc_pwren>;
-		regulator-name = "vcc_sdmmc";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		regulator-boot-on;
-	};
-
 	/*
 	 * This board follows the RK322x-style power tree for the CPU/GPU
 	 * rails: both are driven directly from PWM regulators, not an RK816.
@@ -158,16 +146,6 @@
 		clock-frequency = <32768>;
 		clock-output-names = "xin32k";
 		#clock-cells = <0>;
-	};
-
-	wireless-wlan {
-		compatible = "wlan-platdata";
-		rockchip,grf = <&grf>;
-		wifi_chip_type = "esp8089";
-		sdio_vref = <0>;
-		WIFI,poweren_gpio = <&gpio0 RK_PD6 GPIO_ACTIVE_HIGH>;
-		WIFI,host_wake_irq = <&gpio0 RK_PA2 GPIO_ACTIVE_HIGH>;
-		status = "okay";
 	};
 
 	wireless-bluetooth {
@@ -634,12 +612,6 @@
 };
 
 &pinctrl {
-	sdmmc-diag {
-		sdmmc_bus1_diag: sdmmc-bus1-diag {
-			rockchip,pins = <1 RK_PC2 1 &pcfg_pull_default>;
-		};
-	};
-
 	pmic {
 		pmic_int_l: pmic-int-l {
 			rockchip,pins =
@@ -683,26 +655,7 @@
 	vref-supply = <&vccadc_ref>;
 };
 
-&sdmmc {
-	/delete-property/ dmas;
-	/delete-property/ dma-names;
-	cap-mmc-highspeed;
-	cap-sd-highspeed;
-	supports-sd;
-	vmmc-supply = <&vcc_sdmmc>;
-	bus-width = <4>;
-	broken-cd;
-	card-detect-delay = <800>;
-	disable-wp;
-	ignore-pm-notify;
-	keep-power-in-suspend;
-	pinctrl-0 = <&sdmmc_clk &sdmmc_cmd &sdmmc_bus4>;
-	status = "okay";
-};
-
 &sdio {
-	/delete-property/ dmas;
-	/delete-property/ dma-names;
 	max-frequency = <37500000>;
 	cap-sd-highspeed;
 	cap-sdio-irq;
@@ -714,7 +667,7 @@
 	pinctrl-0 = <&sdio_cmd &sdio_clk &sdio_bus4>;
 	non-removable;
 	/* vmmc-supply = <&ldo5>; */
-	status = "okay";
+	status = "disabled";
 };
 
 &tsadc {

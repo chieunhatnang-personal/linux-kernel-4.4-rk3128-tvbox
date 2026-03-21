@@ -2865,6 +2865,11 @@ static void dw_mci_init_dma(struct dw_mci *host)
 	struct device *dev = host->dev;
 	struct device_node *np = dev->of_node;
 
+	if (np && of_property_read_bool(np, "rockchip,no-dmaengine")) {
+		dev_info(dev, "PIO forced by device tree.\n");
+		goto no_dma;
+	}
+
 	/*
 	* Check tansfer mode from HCON[17:16]
 	* Clear the ambiguous description of dw_mmc databook:

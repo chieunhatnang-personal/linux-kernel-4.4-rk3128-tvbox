@@ -1,0 +1,35 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Restore the board-default state where the external SD slot stays disabled
+ * and card detect remains on GPIO2_7.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	fragment@0 {
+		target-path = "/chosen";
+		__overlay__ {
+			stdout-path = "serial2:115200n8";
+			bootargs = "earlycon=uart8250,mmio32,0x20068000 console=ttyS2,115200n8";
+		};
+	};
+
+	fragment@1 {
+		target = <&sdmmc>;
+		__overlay__ {
+			cd-gpios = <&gpio2 7 GPIO_ACTIVE_LOW>;
+			status = "disabled";
+		};
+	};
+
+	fragment@2 {
+		target = <&uart2>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+};

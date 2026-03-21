@@ -607,6 +607,13 @@ dtb-$(CONFIG_ARCH_ROCKCHIP) += \
 	rk3326-evb-lp3-v10-avb.dtb \
 	rk3326-863-lp3-v10-avb.dtb \
 	rv1108-minievb-v10.dtb
+overlay-dtb-$(CONFIG_ARCH_ROCKCHIP) += \
+	overlay/rk3128-usb-otg-host.dtbo \
+	overlay/rk3128-usb-otg-peripheral.dtbo \
+	overlay/rk3128-wlan-esp8089.dtbo \
+	overlay/rk3128-uart1.dtbo \
+	overlay/rk3128-gpio2-sdcard-disabled.dtbo \
+	overlay/rk3128-sdcard-enabled.dtbo
 dtb-$(CONFIG_ARCH_S3C24XX) += \
 	s3c2416-smdk2416.dtb
 dtb-$(CONFIG_ARCH_S3C64XX) += \
@@ -861,6 +868,17 @@ endif
 dtstree		:= $(srctree)/$(src)
 dtb-$(CONFIG_OF_ALL_DTBS) := $(patsubst $(dtstree)/%.dts,%.dtb, $(wildcard $(dtstree)/*.dts))
 
+quiet_cmd_dtco = DTCO    $@
+cmd_dtco = mkdir -p $(dir ${dtc-tmp}) ; \
+	$(CPP) $(dtc_cpp_flags) -x assembler-with-cpp -o $(dtc-tmp) $< ; \
+	$(DTC) -O dtb -o $@ -b 0 \
+		-i $(dir $<) -@ $(DTC_FLAGS) \
+		-d $(depfile).dtc.tmp $(dtc-tmp) ; \
+	cat $(depfile).pre.tmp $(depfile).dtc.tmp > $(depfile)
+
+$(obj)/overlay/%.dtbo: $(src)/overlay/%.dts FORCE
+	$(call if_changed_dep,dtco)
+
 DTB_NAMES := $(subst $\",,$(CONFIG_BUILD_ARM_APPENDED_DTB_IMAGE_NAMES))
 ifneq ($(DTB_NAMES),)
 DTB_LIST := $(addsuffix .dtb,$(DTB_NAMES))
@@ -868,8 +886,10 @@ else
 DTB_LIST := $(dtb-y)
 endif
 
-targets += dtbs dtbs_install
-targets += $(DTB_LIST)
+OVERLAY_DTB_LIST := $(overlay-dtb-y)
 
-always		:= $(DTB_LIST)
-clean-files	:= *.dtb
+targets += dtbs dtbs_install
+targets += $(DTB_LIST) $(OVERLAY_DTB_LIST)
+
+always		:= $(DTB_LIST) $(OVERLAY_DTB_LIST)
+clean-files	:= *.dtb overlay/*.dtbo

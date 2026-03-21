@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * RK3128 WLAN overlay for boards populated with ESP8089.
+ * RK3128 WLAN overlay for boards populated with ESP8089. This overlay enables
+ * the SDIO host and forces it to PIO mode, which is the stable configuration
+ * on this board.
  */
 
 /dts-v1/;
@@ -22,6 +24,24 @@
 				WIFI,host_wake_irq = <&gpio0 RK_PA2 GPIO_ACTIVE_HIGH>;
 				status = "okay";
 			};
+		};
+	};
+
+	fragment@1 {
+		target = <&sdio>;
+		__overlay__ {
+			rockchip,no-dmaengine;
+			max-frequency = <37500000>;
+			cap-sd-highspeed;
+			cap-sdio-irq;
+			supports-sdio;
+			disable-wp;
+			ignore-pm-notify;
+			keep-power-in-suspend;
+			pinctrl-names = "default";
+			pinctrl-0 = <&sdio_cmd &sdio_clk &sdio_bus4>;
+			non-removable;
+			status = "okay";
 		};
 	};
 };

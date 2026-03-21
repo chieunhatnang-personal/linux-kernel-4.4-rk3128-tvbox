@@ -1,0 +1,49 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Enable the external SD slot using the current stable RK3128 configuration:
+ * 4-bit SDMMC in PIO mode.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+
+/ {
+	fragment@0 {
+		target-path = "/";
+		__overlay__ {
+			vcc_sdmmc_overlay: vcc-sdmmc {
+				compatible = "regulator-fixed";
+				gpio = <&gpio1 RK_PB6 GPIO_ACTIVE_HIGH>;
+				enable-active-high;
+				pinctrl-names = "default";
+				pinctrl-0 = <&sdmmc_pwren>;
+				regulator-name = "vcc_sdmmc";
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-boot-on;
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&sdmmc>;
+		__overlay__ {
+			rockchip,no-dmaengine;
+			cap-mmc-highspeed;
+			cap-sd-highspeed;
+			supports-sd;
+			vmmc-supply = <&vcc_sdmmc_overlay>;
+			bus-width = <4>;
+			broken-cd;
+			card-detect-delay = <800>;
+			disable-wp;
+			ignore-pm-notify;
+			keep-power-in-suspend;
+			pinctrl-0 = <&sdmmc_clk &sdmmc_cmd &sdmmc_bus4>;
+			status = "okay";
+		};
+	};
+};
