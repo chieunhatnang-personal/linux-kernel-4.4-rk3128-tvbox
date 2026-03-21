@@ -246,6 +246,7 @@ static int esp_op_add_interface(struct ieee80211_hw *hw,
 			svif.is_p2p = 0;
 			break;
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 37))
+#ifdef P2P_CONCURRENT
 		case NL80211_IFTYPE_P2P_CLIENT:
 			ESP_IEEE80211_DBG(ESP_SHOW, "%s P2P_CLIENT \n", __func__);
 			svif.op_mode = 0;
@@ -256,6 +257,7 @@ static int esp_op_add_interface(struct ieee80211_hw *hw,
 			svif.op_mode = 1;
 			svif.is_p2p = 1;
 			break;
+#endif
 #endif
 		case NL80211_IFTYPE_UNSPECIFIED:
 		case NL80211_IFTYPE_ADHOC:
@@ -306,6 +308,7 @@ static int esp_op_change_interface(struct ieee80211_hw *hw,
                 svif.op_mode = 1;
                 svif.is_p2p = p2p;
                 break;
+#ifdef P2P_CONCURRENT
         case NL80211_IFTYPE_P2P_CLIENT:
                 svif.op_mode = 0;
                 svif.is_p2p = 1;
@@ -314,6 +317,7 @@ static int esp_op_change_interface(struct ieee80211_hw *hw,
                 svif.op_mode = 1;
                 svif.is_p2p = 1;
                 break;
+#endif
         case NL80211_IFTYPE_UNSPECIFIED:
         case NL80211_IFTYPE_ADHOC:
         case NL80211_IFTYPE_AP_VLAN:
@@ -2220,11 +2224,15 @@ esp_pub_init_mac80211(struct esp_pub *epub)
 #endif
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 28))
-        /* ONLY station for now, support P2P soon... */
+        /* Keep this driver single-interface on RK3128 to avoid p2p0 becoming
+         * the active station interface on unstable ESP8089 SDIO setups.
+         */
         hw->wiphy->interface_modes = 
+#ifdef P2P_CONCURRENT
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 37))
             BIT(NL80211_IFTYPE_P2P_GO) |
 		    BIT(NL80211_IFTYPE_P2P_CLIENT) |
+#endif
 #endif
             BIT(NL80211_IFTYPE_STATION) |
 		    BIT(NL80211_IFTYPE_AP);

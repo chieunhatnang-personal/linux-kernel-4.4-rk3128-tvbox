@@ -37,8 +37,12 @@ struct completion *gl_bootup_cplx = NULL;
 static int esp_download_fw(struct esp_pub * epub);
 #endif /* !FGPA_DEBUG */
 
-static int modparam_no_txampdu = 0;
-static int modparam_no_rxampdu = 0;
+/*
+ * This SDIO-attached ESP8089 is more reliable on RK3128 when AMPDU is off.
+ * Keep the module parameters so the default can still be overridden.
+ */
+static int modparam_no_txampdu = 1;
+static int modparam_no_rxampdu = 1;
 module_param_named(no_txampdu, modparam_no_txampdu, int, 0444);
 MODULE_PARM_DESC(no_txampdu, "Disable tx ampdu.");
 module_param_named(no_rxampdu, modparam_no_rxampdu, int, 0444);

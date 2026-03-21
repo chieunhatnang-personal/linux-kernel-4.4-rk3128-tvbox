@@ -1,7 +1,6 @@
 ccflags-y += -DDEBUG -DSIP_DEBUG -DFAST_TX_STATUS
 ccflags-y += -DKERNEL_IV_WAR -DRX_SENDUP_SYNC -DDEBUG_FS
 ccflags-y += -DSIF_DSR_WAR -DHAS_INIT_DATA -DHAS_FW
-ccflags-y += -DP2P_CONCURRENT
 ccflags-y += -DESP_USE_SDIO
 
 # This in-tree integration targets the SDIO-connected ESP8089 used on RK3128.
