@@ -1467,17 +1467,15 @@ static int ssv6xxx_read_configuration(struct ssv_hw *sh)
         sh->cfg.crystal_type = SSV6XXX_IQK_CFG_XTAL_24M;
     else
     {
-        printk("Please redefine xtal_clock(wifi.cfg)!!\n");
-        WARN_ON(1);
-        return 1;
+        sh->cfg.crystal_type = SSV6XXX_IQK_CFG_XTAL_24M;
+        printk(KERN_WARNING "xtal_clock(wifi.cfg) missing, defaulting to 24MHz.\n");
     }
     if(ssv_cfg.volt_regulator < 2)
         sh->cfg.volt_regulator = ssv_cfg.volt_regulator;
     else
     {
-        printk("Please redefine volt_regulator(wifi.cfg)!!\n");
-        WARN_ON(1);
-        return 1;
+        sh->cfg.volt_regulator = 1;
+        printk(KERN_WARNING "volt_regulator(wifi.cfg) missing, defaulting to 1.\n");
     }
     sh->cfg.wifi_tx_gain_level_gn = ssv_cfg.wifi_tx_gain_level_gn;
     sh->cfg.wifi_tx_gain_level_b = ssv_cfg.wifi_tx_gain_level_b;

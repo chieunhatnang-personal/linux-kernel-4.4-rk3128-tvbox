@@ -2030,7 +2030,9 @@ static int ssv6200_set_key(struct ieee80211_hw *hw,
                     if ((key->keyidx == 0) && (sta_priv != NULL))
                     {
                         #ifdef USE_LOCAL_CRYPTO
+#ifdef MULTI_THREAD_ENCRYPT
                         unsigned long flags;
+#endif
                         INIT_WRITE_CRYPTO_DATA(crypto_data, &sta_priv->crypto_data);
                         #endif
                         sta_priv->has_hw_decrypt = false;
@@ -2040,19 +2042,23 @@ static int ssv6200_set_key(struct ieee80211_hw *hw,
                         #ifdef USE_LOCAL_CRYPTO
                         if (crypto_data->ops && crypto_data->priv)
                         {
+#ifdef MULTI_THREAD_ENCRYPT
                             u32 sta_addr0_3 = *(u32 *)&sta->addr[0];
                             u32 sta_addr4_5 = (u32)*(u16 *)&sta->addr[4];
                             u32 removed_skb_num;
+#endif
                             START_WRITE_CRYPTO_DATA(crypto_data);
                             crypto_data->ops->deinit(crypto_data->priv);
                             crypto_data->priv = NULL;
                             crypto_data->ops = NULL;
                             END_WRITE_CRYPTO_DATA(crypto_data);
+#ifdef MULTI_THREAD_ENCRYPT
                             spin_lock_irqsave(&sc->crypt_st_lock, flags);
                             removed_skb_num = _remove_sta_skb_from_q(sc, &sc->preprocess_q,
                                                                      sta_addr0_3, sta_addr4_5);
                             spin_unlock_irqrestore(&sc->crypt_st_lock, flags);
                             dev_err(sc->dev, "Clean up %d skb for STA %pM.\n", removed_skb_num, sta->addr);
+#endif
                         }
                         #endif
                     }
@@ -4475,7 +4481,6 @@ struct ieee80211_ops ssv6200_ops =
 #endif
 };
 #ifdef USE_LOCAL_CRYPTO
-#ifdef MULTI_THREAD_ENCRYPT
 struct ssv_crypto_data * ssv6xxx_skb_get_tx_cryptops(struct sk_buff *mpdu)
 {
     struct ieee80211_tx_info *info = IEEE80211_SKB_CB(mpdu);
@@ -4510,6 +4515,7 @@ struct ssv_crypto_data * ssv6xxx_skb_get_tx_cryptops(struct sk_buff *mpdu)
         return &vif_priv->crypto_data;
     }
 }
+#ifdef MULTI_THREAD_ENCRYPT
 int ssv6xxx_skb_pre_encrypt(struct sk_buff *mpdu, struct ssv_softc *sc)
 {
     struct ssv_crypto_data *crypto_data = NULL;
@@ -4556,28 +4562,11 @@ int ssv6xxx_skb_pre_decrypt(struct sk_buff *mpdu, struct ieee80211_sta *sta, str
 int ssv6xxx_skb_encrypt(struct sk_buff *mpdu, struct ssv_softc *sc)
 {
     struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)mpdu->data;
- int ret = 0;
-#ifndef MULTI_THREAD_ENCRYPT
-    struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(mpdu);
-    struct SKB_info_st *skb_info = (struct SKB_info_st *)mpdu->head;
-    struct ieee80211_sta *sta = skb_info->sta;
-    struct ssv_sta_priv_data *sta_priv_dat = NULL;
-#endif
+    int ret = 0;
     struct ssv_crypto_data *crypto_data = NULL;
-#ifndef MULTI_THREAD_ENCRYPT
-    if (sta || unicast)
-    {
-        sta_priv_dat = (struct ssv_sta_priv_data *)sta->drv_priv;
-        crypto_data = &sta_priv_data->crypto_data;
-    }
-    else
-    {
-        struct ssv_vif_priv_data *vif_priv = (struct ssv_vif_priv_data *)tx_info->control.vif->drv_priv;
-        crypto_data = &vif_priv->crypto_data;
-    }
-#else
     crypto_data = ssv6xxx_skb_get_tx_cryptops(mpdu);
-#endif
+    if (crypto_data == NULL)
+        return -1;
     START_READ_CRYPTO_DATA(crypto_data);
     if ((crypto_data == NULL) || (crypto_data->ops == NULL) || (crypto_data->priv == NULL))
     {

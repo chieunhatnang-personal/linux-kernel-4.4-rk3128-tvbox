@@ -611,6 +611,7 @@ overlay-dtb-$(CONFIG_ARCH_ROCKCHIP) += \
 	overlay/rk3128-usb-otg-host.dtbo \
 	overlay/rk3128-usb-otg-peripheral.dtbo \
 	overlay/rk3128-wlan-esp8089.dtbo \
+	overlay/rk3128-wlan-ssv6051.dtbo \
 	overlay/rk3128-uart1.dtbo \
 	overlay/rk3128-gpio2-sdcard-disabled.dtbo \
 	overlay/rk3128-sdcard-enabled.dtbo

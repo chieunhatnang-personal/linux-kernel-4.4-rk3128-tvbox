@@ -58,7 +58,13 @@ static char *ssv6xxx_cmd_buf;
 char *ssv6xxx_result_buf;
 extern struct ssv6xxx_cfg_cmd_table cfg_cmds[];
 extern struct ssv6xxx_cfg ssv_cfg;
-char DEFAULT_CFG_PATH[] = "/vendor/etc/firmware/ssv6051-wifi.cfg";
+char DEFAULT_CFG_PATH[] = "/lib/firmware/ssv6051-wifi.cfg";
+static const char *ssv_cfg_fallback_paths[] = {
+	"/lib/firmware/ssv6051-wifi.cfg",
+	"/etc/firmware/ssv6051-wifi.cfg",
+	"/vendor/etc/firmware/ssv6051-wifi.cfg",
+	"/system/etc/wifi/ssv6051/ssv6051-wifi.cfg",
+};
 static int ssv6xxx_dbg_open(struct inode *inode, struct file *filp)
 {
     filp->private_data = inode->i_private;
@@ -153,25 +159,34 @@ int ischar(char *c)
 void sta_cfg_set(char *stacfgpath)
 {
  struct file *fp = (struct file *) NULL;
+ const char *cfg_path = stacfgpath;
  char buf[MAX_CHARS_PER_LINE], cfg_cmd[32], cfg_value[32];
  mm_segment_t fs;
  size_t s, read_len = 0, is_cmd_support = 0;
- printk("\n*** %s, %s ***\n\n", __func__, stacfgpath);
-    if (stacfgpath == NULL) {
-        stacfgpath = DEFAULT_CFG_PATH;
-        printk("redirect to %s\n", stacfgpath);
-    }
+ int i;
+ printk("\n*** %s, %s ***\n\n", __func__, stacfgpath ? stacfgpath : "(null)");
  memset(&ssv_cfg, 0, sizeof(ssv_cfg));
  memset(buf, 0, sizeof(buf));
- fp = filp_open(stacfgpath, O_RDONLY, 0);
+ if (cfg_path != NULL) {
+  fp = filp_open(cfg_path, O_RDONLY, 0);
+ } else {
+  for (i = 0; i < ARRAY_SIZE(ssv_cfg_fallback_paths); i++) {
+   fp = filp_open(ssv_cfg_fallback_paths[i], O_RDONLY, 0);
+   if (!IS_ERR(fp) && fp != NULL) {
+    cfg_path = ssv_cfg_fallback_paths[i];
+    printk("redirect to %s\n", cfg_path);
+    break;
+   }
+  }
+ }
  if (IS_ERR(fp) || fp == NULL) {
-  printk("ERROR: filp_open\n");
-        WARN_ON(1);
+  printk("Config file %s not found, using built-in defaults.\n",
+         cfg_path ? cfg_path : DEFAULT_CFG_PATH);
   return;
  }
  if (fp->f_path.dentry == NULL) {
-  printk("ERROR: dentry NULL\n");
-        WARN_ON(1);
+  printk("Config file %s has no dentry, using built-in defaults.\n", cfg_path);
+  filp_close(fp, NULL);
   return;
  }
  do {

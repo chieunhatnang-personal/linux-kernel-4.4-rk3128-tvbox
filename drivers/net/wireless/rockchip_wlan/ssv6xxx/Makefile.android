@@ -4,6 +4,10 @@ KBUILD_TOP := $(PWD)
 include $(KBUILD_TOP)/platforms/$(PLATFORMS).cfg
 include $(KBUILD_TOP)/platforms/platform-config.mak
 
+# Keep Android and in-tree builds aligned: disable the multi-thread crypto
+# worker so the driver uses the synchronous encrypt path.
+ccflags-y := $(filter-out -DMULTI_THREAD_ENCRYPT -DKTHREAD_BIND,$(ccflags-y))
+
 PWD := $(shell pwd)
 
 ifeq ($(KERNELRELEASE),)
@@ -92,4 +96,3 @@ endif
 clean:
 	make -C $(SSV_KERNEL_PATH) ARCH=$(SSV_ARCH) CROSS_COMPILE=$(SSV_CROSS) \
 	M=$(PWD) clean
-

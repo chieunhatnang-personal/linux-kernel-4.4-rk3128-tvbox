@@ -1,0 +1,80 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * RK3128 WLAN overlay for boards populated with SSV6051.
+ *
+ * This follows the RK3128 TV-box wiring already validated with ESP8089:
+ * - host wake on GPIO0_A2
+ * - WLAN enable on GPIO0_D6
+ * - 32.768 kHz input from xin32k
+ *
+ * SSV6051 still uses mmc-pwrseq-simple here, but the reset/enable line is
+ * mapped to the same board pin used as WLAN power-enable on this box.
+ *
+ * If your TV box routes host-wake or enable differently, adjust those GPIOs
+ * after the first test boot.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+
+/ {
+	fragment@0 {
+		target-path = "/";
+			__overlay__ {
+				sdio_pwrseq_ssv6051: sdio-pwrseq-ssv6051 {
+					compatible = "mmc-pwrseq-simple";
+					clocks = <&xin32k>;
+					pinctrl-names = "default";
+					pinctrl-0 = <&wifi_enable_h_ssv6051>;
+					reset-gpios = <&gpio0 RK_PD6 GPIO_ACTIVE_LOW>;
+					status = "okay";
+				};
+
+				wireless-wlan {
+					compatible = "wlan-platdata";
+					rockchip,grf = <&grf>;
+					clocks = <&xin32k>;
+					clock-names = "clk_wifi";
+					ref-clock-frequency = <32768>;
+					wifi_chip_type = "ssv6051";
+					sdio_vref = <1800>;
+					WIFI,host_wake_irq = <&gpio0 RK_PA2 GPIO_ACTIVE_HIGH>;
+					status = "okay";
+				};
+			};
+	};
+
+	fragment@1 {
+		target = <&pinctrl>;
+		__overlay__ {
+			sdio-pwrseq {
+				wifi_enable_h_ssv6051: wifi-enable-h-ssv6051 {
+					rockchip,pins = <0 RK_PD6 RK_FUNC_GPIO &pcfg_pull_none>;
+				};
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&sdio>;
+		__overlay__ {
+			mmc-pwrseq = <&sdio_pwrseq_ssv6051>;
+			rockchip,no-dmaengine;
+			max-frequency = <37500000>;
+			bus-width = <4>;
+			cap-sd-highspeed;
+			cap-sdio-irq;
+			supports-sdio;
+			disable-wp;
+			ignore-pm-notify;
+			keep-power-in-suspend;
+			pinctrl-names = "default";
+			pinctrl-0 = <&sdio_cmd &sdio_clk &sdio_bus4>;
+			non-removable;
+			status = "okay";
+		};
+	};
+};
