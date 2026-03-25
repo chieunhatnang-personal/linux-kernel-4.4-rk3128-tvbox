@@ -609,9 +609,13 @@ dtb-$(CONFIG_ARCH_ROCKCHIP) += \
 	rv1108-minievb-v10.dtb
 overlay-dtb-$(CONFIG_ARCH_ROCKCHIP) += \
 	overlay/rk3128-dmc-disabled.dtbo \
+	overlay/rk3128-ddr3-300.dtbo \
 	overlay/rk3128-ddr3-330.dtbo \
-	overlay/rk3128-ddr3-528.dtbo \
-	overlay/rk3128-ddr3-660.dtbo \
+	overlay/rk3128-ddr3-400.dtbo \
+	overlay/rk3128-ddr3-600.dtbo \
+	overlay/rk3128-ddr3-666.dtbo \
+	overlay/rk3128-ddr3-700.dtbo \
+	overlay/rk3128-ddr3-786.dtbo \
 	overlay/rk3128-ddr3-800.dtbo \
 	overlay/rk3128-usb-otg-host.dtbo \
 	overlay/rk3128-usb-otg-peripheral.dtbo \

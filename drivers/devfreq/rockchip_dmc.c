@@ -2991,6 +2991,17 @@ static int devfreq_dmc_ondemand_func(struct devfreq *df,
 	unsigned long target_freq = 0;
 	u64 now;
 
+	/*
+	 * Match the simple_ondemand governor behavior when DT does not
+	 * provide explicit thresholds. The base RK3128 DMC nodes do not set
+	 * these properties, so treating 0 as "invalid" leaves the target
+	 * frequency undefined in dynamic mode.
+	 */
+	if (!upthreshold)
+		upthreshold = 90;
+	if (!downdifferential)
+		downdifferential = 5;
+
 	if (dmcfreq->auto_freq_en && !dmcfreq->is_fixed) {
 		if (dmcfreq->status_rate)
 			target_freq = dmcfreq->status_rate;
@@ -3013,9 +3024,6 @@ static int devfreq_dmc_ondemand_func(struct devfreq *df,
 			return 0;
 		goto reset_last_status;
 	}
-
-	if (!upthreshold || !downdifferential)
-		goto reset_last_status;
 
 	if (upthreshold > 100 ||
 	    upthreshold < downdifferential)

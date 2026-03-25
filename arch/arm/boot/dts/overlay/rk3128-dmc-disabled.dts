@@ -1,0 +1,21 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Disable the Rockchip DMC devfreq driver on RK3128.
+ *
+ * This leaves DDR running at the bootloader-programmed frequency instead of
+ * allowing Linux to change DRAM rate and related supply settings at runtime.
+ * It is intended as a stability test for boards that hang shortly after the
+ * DMC driver probes.
+ */
+
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target = <&dmc>;
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+};
