@@ -65,13 +65,6 @@ static const struct sdio_device_id sdio_ids[] =
 	{ SDIO_DEVICE(0x024c, 0xB703), .driver_data = RTL8703B},
 #endif
 
-#ifdef CONFIG_RTL8188F
-	{SDIO_DEVICE(0x024c, 0xF179), .driver_data = RTL8188F},
-#endif
-
-#if defined(RTW_ENABLE_WIFI_CONTROL_FUNC) /* temporarily add this to accept all sdio wlan id */
-	{ SDIO_DEVICE_CLASS(SDIO_CLASS_WLAN) },
-#endif
 	{ /* end: all zeroes */				},
 };
 
@@ -1110,4 +1103,3 @@ EXPORT_SYMBOL(rockchip_wifi_exit_module_rtkwifi);
 #endif
 //module_init(rtw_drv_entry);
 //module_exit(rtw_drv_halt);
-

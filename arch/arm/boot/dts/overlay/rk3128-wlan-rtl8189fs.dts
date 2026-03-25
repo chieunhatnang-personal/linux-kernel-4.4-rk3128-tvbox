@@ -1,0 +1,78 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * RK3128 WLAN overlay for boards populated with RTL8189FS / RTL8189FTV.
+ *
+ * This board family reuses the same proven RK3128 TV-box wiring used by the
+ * working ESP8089 and SSV6051 overlays:
+ * - WLAN enable / reset on GPIO0_D6
+ * - host wake on GPIO0_A2
+ *
+ * The in-tree Rockchip RFKILL glue identifies the 8189F SDIO family with the
+ * "rtl8189fs" chip type string, even when the module fitted on the board is
+ * sold as RTL8189FTV.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+
+/ {
+	fragment@0 {
+		target-path = "/";
+		__overlay__ {
+			sdio_pwrseq_rtl8189fs: sdio-pwrseq-rtl8189fs {
+				compatible = "mmc-pwrseq-simple";
+				clocks = <&xin32k>;
+				clock-names = "ext_clock";
+				pinctrl-names = "default";
+				pinctrl-0 = <&wifi_enable_h_rtl8189fs>;
+				reset-gpios = <&gpio0 RK_PD6 GPIO_ACTIVE_LOW>;
+				status = "okay";
+			};
+
+			wireless-wlan {
+				compatible = "wlan-platdata";
+				rockchip,grf = <&grf>;
+				clocks = <&xin32k>;
+				clock-names = "clk_wifi";
+				ref-clock-frequency = <32768>;
+				wifi_chip_type = "rtl8189fs";
+				WIFI,host_wake_irq = <&gpio0 RK_PA2 GPIO_ACTIVE_HIGH>;
+				status = "okay";
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&pinctrl>;
+		__overlay__ {
+			sdio-pwrseq {
+				wifi_enable_h_rtl8189fs: wifi-enable-h-rtl8189fs {
+					rockchip,pins = <0 RK_PD6 RK_FUNC_GPIO &pcfg_pull_none>;
+				};
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&sdio>;
+		__overlay__ {
+			mmc-pwrseq = <&sdio_pwrseq_rtl8189fs>;
+			rockchip,no-dmaengine;
+			max-frequency = <37500000>;
+			bus-width = <4>;
+			cap-sd-highspeed;
+			cap-sdio-irq;
+			supports-sdio;
+			disable-wp;
+			ignore-pm-notify;
+			keep-power-in-suspend;
+			pinctrl-names = "default";
+			pinctrl-0 = <&sdio_cmd &sdio_clk &sdio_bus4>;
+			non-removable;
+			status = "okay";
+		};
+	};
+};
