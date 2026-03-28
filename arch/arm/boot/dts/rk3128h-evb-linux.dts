@@ -292,7 +292,7 @@
 	disable-wp;
 	non-removable;
 	num-slots = <1>;
-	/delete-property/ default-sample-phase;
+	/delete-property/ rockchip,default-sample-phase;
 	/delete-property/ pinctrl-names;
 	/delete-property/ pinctrl-0;
 	status = "okay";

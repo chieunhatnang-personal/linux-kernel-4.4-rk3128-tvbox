@@ -307,6 +307,10 @@
 	status = "okay";
 };
 
+&wdt {
+	status = "okay";
+};
+
 &gmac {
 	assigned-clocks = <&cru SCLK_MAC_SRC>;
 	assigned-clock-rates = <50000000>;

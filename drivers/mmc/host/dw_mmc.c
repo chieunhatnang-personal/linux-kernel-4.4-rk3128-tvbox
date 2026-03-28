@@ -412,7 +412,6 @@ static void dw_mci_start_command(struct dw_mci *host,
 	dev_vdbg(host->dev,
 		 "start command: ARGR=0x%08x CMDR=0x%08x\n",
 		 cmd->arg, cmd_flags);
-
 	mci_writel(host, CMDARG, cmd->arg);
 	wmb(); /* drain writebuffer */
 	dw_mci_wait_while_busy(host, cmd_flags);

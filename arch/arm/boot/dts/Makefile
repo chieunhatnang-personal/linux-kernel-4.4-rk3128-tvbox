@@ -617,6 +617,7 @@ overlay-dtb-$(CONFIG_ARCH_ROCKCHIP) += \
 	overlay/rk3128-ddr3-700.dtbo \
 	overlay/rk3128-ddr3-786.dtbo \
 	overlay/rk3128-ddr3-800.dtbo \
+	overlay/rk3128-emmc-enabled.dtbo \
 	overlay/rk3128-usb-otg-host.dtbo \
 	overlay/rk3128-usb-otg-peripheral.dtbo \
 	overlay/rk3128-wlan-esp8089.dtbo \

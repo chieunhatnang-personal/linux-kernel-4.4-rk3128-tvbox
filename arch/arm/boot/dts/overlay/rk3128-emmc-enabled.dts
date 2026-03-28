@@ -1,0 +1,37 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Select the validated eMMC configuration for RK3128 box variants assembled
+ * with eMMC instead of raw NAND. Keep the controller in PIO mode and cap the
+ * bus at 25 MHz, which proved stable on the tested board.
+ */
+
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target = <&emmc>;
+		__overlay__ {
+			broken-cd;
+			bus-width = <8>;
+			cap-mmc-highspeed;
+			supports-emmc;
+			disable-wp;
+			ignore-pm-notify;
+			keep-power-in-suspend;
+			non-removable;
+			num-slots = <1>;
+			max-frequency = <25000000>;
+			post-power-on-delay-ms = <200>;
+			rockchip,no-dmaengine;
+			status = "okay";
+		};
+	};
+
+	fragment@1 {
+		target = <&nandc>;
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+};

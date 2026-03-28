@@ -695,7 +695,12 @@ static int rockchip_restart_notify(struct notifier_block *this,
 
 static struct notifier_block rockchip_restart_handler = {
 	.notifier_call = rockchip_restart_notify,
-	.priority = 128,
+	/*
+	 * Keep the CRU global soft reset as a fallback restart path.
+	 * Some boards need a board-specific restart source such as a
+	 * watchdog or GPIO restart handler to run first.
+	 */
+	.priority = 64,
 };
 
 void __init rockchip_register_restart_notifier(struct rockchip_clk_provider *ctx,
