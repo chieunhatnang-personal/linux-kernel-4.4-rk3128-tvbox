@@ -64,6 +64,9 @@
 		i2c1 = &i2c1;
 		i2c2 = &i2c2;
 		i2c3 = &i2c3;
+		mmc0 = &emmc;
+		mmc1 = &sdmmc;
+		mmc2 = &sdio;
 	};
 
 	cpus {
@@ -248,7 +251,11 @@
 		};
 		opp-300000000 {
 			opp-hz = /bits/ 64 <300000000>;
-			opp-microvolt = <1025000>;
+			opp-microvolt = <1050000>;
+		};
+		opp-330000000 {
+			opp-hz = /bits/ 64 <330000000>;
+			opp-microvolt = <1050000>;
 		};
 		opp-396000000 {
 			opp-hz = /bits/ 64 <396000000>;
@@ -257,6 +264,10 @@
 		opp-456000000 {
 			opp-hz = /bits/ 64 <456000000>;
 			opp-microvolt = <1200000>;
+		};
+		opp-528000000 {
+			opp-hz = /bits/ 64 <528000000>;
+			opp-microvolt = <1250000>;
 		};
 	};
 

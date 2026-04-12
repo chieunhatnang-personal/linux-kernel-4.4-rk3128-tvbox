@@ -330,6 +330,7 @@ EXPORT_SYMBOL(mmc_of_parse);
  */
 struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
 {
+	int alias_id;
 	int err;
 	struct mmc_host *host;
 
@@ -339,9 +340,19 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
 
 	/* scanning will be enabled when we're ready */
 	host->rescan_disable = 1;
+
+	if (dev && dev->of_node)
+		alias_id = of_alias_get_id(dev->of_node, "mmc");
+	else
+		alias_id = -1;
+
 	idr_preload(GFP_KERNEL);
 	spin_lock(&mmc_host_lock);
-	err = idr_alloc(&mmc_host_idr, host, 0, 0, GFP_NOWAIT);
+	if (alias_id >= 0)
+		err = idr_alloc(&mmc_host_idr, host, alias_id, alias_id + 1,
+				GFP_NOWAIT);
+	else
+		err = idr_alloc(&mmc_host_idr, host, 0, 0, GFP_NOWAIT);
 	if (err >= 0)
 		host->index = err;
 	spin_unlock(&mmc_host_lock);

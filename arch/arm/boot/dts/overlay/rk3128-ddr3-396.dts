@@ -1,0 +1,22 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Force a fixed 396 MHz DDR clock on RK3128.
+ * Effective DDR data rate is 792 MT/s.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/soc/rockchip-system-status.h>
+
+/ {
+	fragment@0 {
+		target = <&dmc>;
+		__overlay__ {
+			status = "okay";
+			auto-freq-en = <0>;
+			system-status-freq = <SYS_STATUS_NORMAL 396000>;
+			dram_freq = <396000000>;
+		};
+	};
+};
